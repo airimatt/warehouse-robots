@@ -80,7 +80,7 @@ def graph_search(
         # if we reached goal state -> end the search so there's a possibility 
         # all the nodes aren't hit
         if (goal_description.is_goal(currNode)):
-            print("Goal Reached! States generated: ", iterations)
+            print("Goal Reached! States generated: ", states_generated)
             return True, currNode.extract_plan()
 
         # returns list of next actions

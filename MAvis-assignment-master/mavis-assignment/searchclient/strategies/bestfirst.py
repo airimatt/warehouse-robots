@@ -133,4 +133,4 @@ class FrontierGreedy(FrontierBestFirst):
 
     def f(self, state: h_state.HospitalState, goal_description: h_goal_description.HospitalGoalDescription) -> int:
         # f(n) = h(n)
-        return self.heuristic.h(state, FrontierBestFirst.goal_description)
+        return self.heuristic.h(state, goal_description)
