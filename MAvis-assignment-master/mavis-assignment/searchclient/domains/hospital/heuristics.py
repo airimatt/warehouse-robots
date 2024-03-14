@@ -92,12 +92,19 @@ class HospitalAdvancedHeuristics:
 
         # forloop thru agents and their corresponding goals
             # calculate distance and add to total_distance
-
+            
+        agent_index = 0
         for (goal_position, goal_char, is_positive_literal) in goal_description.agent_goals:
-            agent_index = 0
+            # print("num goals: ", len(goal_description.agent_goals))
             agent = state.agent_positions[agent_index]
-            total_distance += self.distances[goal_position, agent[agent_index]]
-            agent_index+=1
+            total_distance += self.distances[goal_position, agent[0]]
+            agent_index += 1
+
+
+            # print("agent index: ", agent_index)
+            # print("agent ", agent[1])
+            # print("goal at ", goal_position)
+            # print("agent ", agent[1], " at position ", agent[0], " and distance: ", self.distances[goal_position, agent[0]])
 
         # for agent_pos in state.agent_positions:
         #     print("position of agent?: " + agent_pos[0])
