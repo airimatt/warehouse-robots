@@ -105,115 +105,82 @@ class MoveAction:
 # Add your Push and Pull classes here.. Hint: follow the Move class as a template. 
 
 class PushAction:
-    # Add PushAction here.. 
+
     def __init__(self, agent_direction, box_direction):
         self.agent_delta = direction_deltas.get(agent_direction)
         self.box_delta = direction_deltas.get(box_direction)
-        self.name = "Push(%s, %s)" % (agent_direction, box_direction)
+        self.name = "Push(%s,%s)" % (agent_direction, box_direction)
 
-    def calculate_agent_position(self, current_agent_position: Position) -> Position:
-        return pos_add(current_agent_position, self.agent_delta)
+    def calculate_positions(self, current_agent_position):
+        new_agent_position = pos_add(current_agent_position, self.agent_delta)
+        new_box_position = pos_add(new_agent_position, self.box_delta)
+        return new_agent_position, new_box_position
 
-    def calculate_box_position(self, current_box_position: Position) -> Position:
-        return pos_add(current_box_position, self.box_delta)
-    
-    def is_applicable(self, agent_index: int, state: h_state.HospitalState) -> bool:
-
-        current_agent_position, _ = state.agent_positions[agent_index]
-        new_agent_position = self.calculate_agent_position(current_agent_position)
-
-        # agent will move into where the box is currently
-        # (hence agent's new position is the current box's position)
-        
-        current_box_position = [-1, -1]
-        for box_pos in state.box_positions: 
-            if box_pos[1]:
-                current_box_position = box_pos[0][0] # corresponding box index to agent index?
-                
-        # old code: current_box_position = new_agent_position
-        new_box_position = self.calculate_box_position(current_box_position)  # maybe box and agent are in same cell, hence can't push???
-        
-        _, box_char = state.box_at(current_box_position)                        # to ask?? should we instead check if there is a box next to agent, instead of when it's actually in the same cell?
-        _, agent_char = state.agent_at(current_agent_position)                  # new...? todo: print coordinates!
-        # print("box_char tuple", box_char)
-        # print("agent_char tuple", agent_char)
-
-
-        print("Is_applicable Box is at ", current_box_position)
-        print("Is_applicable Agent is at ", current_agent_position,"\n")
-        print("Box char: ", box_char)
-        
-        return state.free_at(new_box_position) and (state.level.colors[box_char] == state.level.colors[agent_char]) # and box_char
-
-    def result(self, agent_index: int, state: h_state.HospitalState):
+    def is_applicable(self, agent_index, state):
         current_agent_position, agent_char = state.agent_positions[agent_index]
-        new_agent_position = self.calculate_agent_position(current_agent_position)
+        new_agent_position, new_box_position = self.calculate_positions(current_agent_position)
+        box_index, box_char = state.box_at(new_agent_position)
+        return box_char \
+               and state.level.colors[box_char] == state.level.colors[agent_char] \
+               and state.free_at(new_box_position)
+
+    def result(self, agent_index, state):
+        current_agent_position, agent_char = state.agent_positions[agent_index]
+        new_agent_position, new_box_position = self.calculate_positions(current_agent_position)
+        box_index, box_char = state.box_at(new_agent_position)
         state.agent_positions[agent_index] = (new_agent_position, agent_char)
-        print("New Agent Position in result: ", new_agent_position)
-        
-        current_box_position = new_agent_position
-        box_index, box_char = state.box_at(current_box_position) 
-        
-        new_box_position = self.calculate_box_position(current_box_position)
         state.box_positions[box_index] = (new_box_position, box_char)
-        print("New Box position in result: ", new_box_position)
 
-    def conflicts(self, agent_index: int, state: h_state.HospitalState) -> tuple[list[Position], list[Position]]:
-        current_agent_position, _ = state.agent_positions[agent_index]
-        new_agent_position = self.calculate_agent_position(current_agent_position)
-
-        current_box_position = new_agent_position
-        new_box_position = self.calculate_box_position(current_box_position)
-        
-        # Destination contains all newly occupied cells
-        destinations = [new_agent_position, new_box_position]
-        print("Destinations: ",destinations)
-        # boxes_moved contains the current location of the box because 2 agents cannot try to pull the same box at the same time
-        boxes_moved = [current_box_position]
-        print("Boxes_moved: ",boxes_moved)
+    def conflicts(self, agent_index, state):
+        current_agent_position, agent_char = state.agent_positions[agent_index]
+        old_box_position, new_box_position = self.calculate_positions(current_agent_position)
+        destinations = [new_box_position]
+        boxes_moved = [old_box_position]
         return destinations, boxes_moved
-        
+
     def __repr__(self):
         return self.name
 
 
-# class PullAction:
-#     # Add PullAction.. 
-#     def __init__(self, agent_direction, box_direction):
-#         self.agent_delta = direction_deltas.get(agent_direction)
-#         self.box_delta = direction_deltas.get(box_direction)
-#         self.name = "Pull(%s, %s)" % (agent_direction, box_direction)
+class PullAction:
 
-    # def calculate_agent_position(self, current_agent_position: Position) -> Position:
-    #     return pos_add(current_agent_position, self.agent_delta)
+    def __init__(self, agent_direction, box_direction):
+        self.agent_delta = direction_deltas.get(agent_direction)
+        self.box_delta = direction_deltas.get(box_direction)
+        self.name = "Pull(%s,%s)" % (agent_direction, box_direction)
 
-    # def calculate_box_position(self, current_box_position: Position) -> Position:
-    #     return pos_add(current_box_position, self.box_delta)
+    def calculate_positions(self, current_agent_position):
+        current_box_position = pos_sub(current_agent_position, self.box_delta)
+        new_agent_position = pos_add(current_agent_position, self.agent_delta)
+        return current_box_position, new_agent_position
 
-#     def is_applicable(self, agent_index: int,  state: h_state.HospitalState) -> bool:
-#         current_agent_position, _ = state.agent_positions[agent_index]
-#         new_agent_position = self.calculate_positions(current_agent_position)
-#         return state.free_at(new_agent_position)
+    def is_applicable(self, agent_index,  state):
+        current_agent_position, agent_char = state.agent_positions[agent_index]
+        current_box_position, new_agent_position = self.calculate_positions(current_agent_position)
+        box_index, box_char = state.box_at(current_box_position)
+        return box_char \
+               and state.level.colors[box_char] == state.level.colors[agent_char] \
+               and state.free_at(new_agent_position)
 
-#     def result(self, agent_index: int, state: h_state.HospitalState):
-#         current_agent_position, agent_char = state.agent_positions[agent_index]
-#         new_agent_position = self.calculate_positions(current_agent_position)
-#         state.agent_positions[agent_index] = (new_agent_position, agent_char)
+    def result(self, agent_index, state):
+        current_agent_position, agent_char = state.agent_positions[agent_index]
+        current_box_position, new_agent_position = self.calculate_positions(current_agent_position)
+        box_index, box_char = state.box_at(current_box_position)
+        state.agent_positions[agent_index] = (new_agent_position, agent_char)
+        state.box_positions[box_index] = (current_agent_position, box_char)
 
-#     def conflicts(self, agent_index: int, state: h_state.HospitalState) -> tuple[list[Position], list[Position]]:
-#         current_agent_position, _ = state.agent_positions[agent_index]
-#         new_agent_position = self.calculate_positions(current_agent_position)
-#         # New agent position is a destination because it is unoccupied before the action and occupied after the action.
-#         destinations = [new_agent_position]
-#         # Since a Move action never moves a box, we can just return the empty value.
-#         boxes_moved = []
-#         return destinations, boxes_moved
+    def conflicts(self, agent_index, state):
+        current_agent_position, _ = state.agent_positions[agent_index]
+        current_box_position, new_agent_position = self.calculate_positions(current_agent_position)
+        destinations = [new_agent_position]
+        boxes_moved = [current_box_position]
+        return destinations, boxes_moved
 
-#     def __repr__(self):
-#         return self.name
+    def __repr__(self):
+        return self.name
 
 
-AnyAction = Union[NoOpAction, MoveAction, PushAction] # Only for type hinting
+AnyAction = Union[NoOpAction, MoveAction, PushAction, PullAction] # Only for type hinting
 
 
 # An action library for the multi agent pathfinding domain using the Move action you implemented
@@ -247,9 +214,22 @@ DEFAULT_HOSPITAL_ACTION_LIBRARY = [
     PushAction("E", "S"),
     PushAction("W", "N"),
     PushAction("W", "S"),
-    PushAction("W", "W")
+    PushAction("W", "W"),
 
     # pull
+
+    PullAction("N", "N"),
+    PullAction("N", "W"),
+    PullAction("N", "E"),
+    PullAction("S", "S"),
+    PullAction("S", "W"),
+    PullAction("S", "E"),
+    PullAction("E", "E"),
+    PullAction("E", "N"),
+    PullAction("E", "S"),
+    PullAction("W", "N"),
+    PullAction("W", "S"),
+    PullAction("W", "W")
 ]
 
 

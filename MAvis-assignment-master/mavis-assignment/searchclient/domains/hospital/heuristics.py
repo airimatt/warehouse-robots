@@ -34,15 +34,21 @@ class HospitalGoalCountHeuristics:
         pass
 
     def h(self, state: h_state.HospitalState, goal_description: h_goal_description.HospitalGoalDescription) -> int:
-        for (goal_position, goal_char, is_positive_literal) in goal_description.agent_goals:
-            char = state.object_at(goal_position)
+        # for (goal_position, goal_char, is_positive_literal) in goal_description.agent_goals: # goals has both agent_goals ad box_goals
+        #     char = state.object_at(goal_position)
             
-            if is_positive_literal and goal_char != char:
-                self.num_goals_to_reach += 1 
-            elif not is_positive_literal and goal_char == char:
-                self.num_goals_to_reach += 1 
+        #     if is_positive_literal and goal_char != char:
+        #         self.num_goals_to_reach += 1 
+        #     elif not is_positive_literal and goal_char == char:
+        #         self.num_goals_to_reach += 1 
+    
+        for index in range(goal_description.num_sub_goals()):
+            sub_goal = goal_description.get_sub_goal(index)
+            if not sub_goal.is_goal(state): self.num_goals_to_reach += 1
 
         return self.num_goals_to_reach
+
+
 
 class HospitalAdvancedHeuristics:
     # best-first search expands nodes with lower h-values before nodes with higher h-values
@@ -51,6 +57,8 @@ class HospitalAdvancedHeuristics:
 
     def __init__(self):
         self.distances = {}
+        # self.agent_to_box = {}
+        # self.box_to_goal = {}
         self.goal_chars = None
         self.agent_chars = None
         self.goals = None
@@ -62,86 +70,42 @@ class HospitalAdvancedHeuristics:
         # initially compute all exact distances between pairs of cells in the level.
         # then look up distances in O(1) time when computing your heuristic values.
 
-        # TO-DO:
-        # initialize a dictionary(hash table) to store lookup table to store distance between one cell and another
-        # size us (# of cells in the map)^2 ?
-        # fill in lookup table by calculating exact/Manhattan distance
-        # reference lookup table by calling table(row, column) ?
-
         # Heuristic 1: Manhattan Distance
 
         rows = len(level.walls)
         cols = len(level.walls[0])
-
-        # print("rows, cols", rows, cols)
-    
-                # distance = tuple of two positions : Manhattan Distance
-                # [[x1, y1], [x2, y2]]
         
         for x1 in range(rows):
             for y1 in range(cols):
                 for x2 in range(rows):
                     for y2 in range(cols):
                         self.distances[(x1, y1), (x2, y2)] = (abs(x2 - x1) + abs(y2 - y1))
-
+            
 
     def h(self, state: h_state.HospitalState, goal_description: h_goal_description.HospitalGoalDescription) -> int:
-        # look up the distance and add to h
-
         total_distance = 0
+        box_to_goal_distance = 0
+        agent_to_box_distance = 0
 
-        # forloop thru agents and their corresponding goals
-            # calculate distance and add to total_distance
-            
-        agent_index = 0
-        for (goal_position, goal_char, is_positive_literal) in goal_description.agent_goals:
-            # print("num goals: ", len(goal_description.agent_goals))
-            agent = state.agent_positions[agent_index]
-            total_distance += self.distances[goal_position, agent[0]]
-            agent_index += 1
+        # for loop thru boxes and their corresponding goals
+        # find the distance from each box and add to total_distance
 
+        # heuristic 1
+        box_index = 0
+        for (goal_position, goal_char, is_positive_literal) in goal_description.box_goals:
+            box = state.box_positions[box_index]
+            box_to_goal_distance += self.distances[goal_position, box[0]]
+            box_index += 1
 
-            # print("agent index: ", agent_index)
-            # print("agent ", agent[1])
-            # print("goal at ", goal_position)
-            # print("agent ", agent[1], " at position ", agent[0], " and distance: ", self.distances[goal_position, agent[0]])
+        total_distance += box_to_goal_distance
 
-        # for agent_pos in state.agent_positions:
-        #     print("position of agent?: " + agent_pos[0])
-    
-        #     goal_pos = goal_description.agent_goals
-        #     print("position of goal?: " + goal_pos[0])
-            
-        #     total_distance += self.distances[agent_pos, goal_pos]
-        #     agent_num += 1
-        
-        # for box_pos in state.box_positions:
-        #     boxgoal_pos = goal_description.box_goals[box_pos]
-        #     total_distance += self.distances[box_pos[0], boxgoal_pos]
-        # print("goal: ", goal_position)
-        # print("agent: ", agent[0])
-        # print("total distance: ", total_distance)
+        # heuristic 2
+        box_index = 0
+        for (agent_coordinate, _) in state.agent_positions:
+            box = state.box_positions[box_index]
+            agent_to_box_distance += self.distances[agent_coordinate, box[0]]
+            box_index += 1
+
+        total_distance += agent_to_box_distance
+
         return total_distance
-
-        # total_distance = 0
-
-        # for (goal_position, goal_char, is_positive_literal) in goal_description.agent_goals:
-        #     char = state.object_at(goal_position)
-
-        #     if is_positive_literal and goal_char != char:
-        #         total_distance += min(
-        #             self.distances[(goal_position, agent_position)]
-        #             for agent_position in state.agent_positions
-        #         )
-
-        #     elif not is_positive_literal and goal_char == char:
-        #         total_distance += min(
-        #             self.distances[(goal_position, agent_position)]
-        #             for agent_position in state.agent_positions
-        #         )
-        
-        
-        
-        # pass
-
-    

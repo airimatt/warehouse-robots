@@ -79,8 +79,13 @@ def graph_search(
         # check if each state is the goal.
         # if we reached goal state -> end the search so there's a possibility 
         # all the nodes aren't hit
+        # print("agents", currNode.agent_positions)
+        # print("boxes", currNode.box_positions)
         if (goal_description.is_goal(currNode)):
+            print("goal", goal_description)
+            # print("curr", currNode)
             print("Goal Reached! States generated: ", states_generated)
+            # print(currNode.extract_plan())
             return True, currNode.extract_plan()
 
         # returns list of next actions
