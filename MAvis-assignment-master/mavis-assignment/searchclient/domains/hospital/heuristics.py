@@ -99,7 +99,7 @@ class HospitalAdvancedHeuristics:
 
         total_distance += box_to_goal_distance
 
-        # heuristic 2
+        # heuristic 2 -- goes with heuristic 1
         box_index = 0
         for (agent_coordinate, _) in state.agent_positions:
             box = state.box_positions[box_index]
